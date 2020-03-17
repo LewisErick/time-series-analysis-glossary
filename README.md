@@ -1,7 +1,7 @@
 # Time-Series Analysis Glossary
 Quick Time-Series Analysis Glossary for Reference (all in README.md)
 
-# Contribute!
+## Contribute!
 Fork and make PR if you want to add a critical term to this glossary.
 
 Based on
@@ -64,3 +64,6 @@ The intuition behind the median is that it splits the population evenly into two
 
 ### Standard Error for Linear Regression
 <img src="img/lin_reg_stderr.png"/>
+
+## Contribute!
+Fork and make PR if you want to add a critical term to this glossary.
