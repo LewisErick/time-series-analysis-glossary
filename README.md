@@ -55,7 +55,7 @@ Three integers (p, d, q) are typically used to parametrize ARIMA models.
 ### Uncertainty
 
 For measuring uncertainty, the z-score parameter is required. The z-score determines the prediction interval coverage.
-- median -> $\pm 0$ standard deviations
+- median -> ± 0 standard deviations
 The intuition behind the median is that it splits the population evenly into two parts. As such, the z-score at 0 marks this point.
 - 50% -> ± 0.675 standard deviations
 - 67% -> ± 1 standard deviations
