@@ -1,6 +1,112 @@
+// Data obtained from Jupyter notebook.
+// Imported via data.
+
+function getStationaryData() {
+    return stationarySeries;
+}
+
+function getStationaryRollingMean() {
+    return stationarySeriesRollingMean;
+}
+
+function getStationaryRollingStddev() {
+    return stationarySeriesRollingStddev;
+}
+
+function getStationaryCovariance() {
+    return stationarySeriesCov;
+}
+
+function applyLog(data) {
+    var log_data = [];
+    for (let index = 0; index < data.length; index++) {
+        const val = data[index];
+        
+        log_data.push({
+            x: val.x,
+            y: Math.log(val.y)
+        });
+    }
+    return log_data;
+}
+
+function exponentialDecay(values, halfLife) {
+    var decayed_values = [];
+    var life = 0;
+    for (let index = 0; index < values.length; index++) {
+        const val = values[index];
+        
+        var x = val.x;
+        var y = val.y;
+
+        var decay = 1 - Math.exp(Math.log(0.5)/life);
+        life += halfLife / values.length; 
+
+        decayed_values.push({x: x, y: y * decay});
+    }
+    console.log(decayed_values);
+    return decayed_values;
+}
+
+function subtractRollingMean(data, rollingMeans) {
+    result_data = [];
+    for (let index = 0; index < data.length; index++) {
+        const val = data[index];
+        const rollingMean = rollingMeans[index];
+        if (isNaN(rollingMean)) {
+            result_data.push(val);
+        } else {
+            result.data.push({
+                x: val.x,
+                y: val.y - rollingMean
+            });
+        }
+    }
+    return result_data;
+}
+
+function timeShift(data) {
+    shiftedValues = [];
+    for (let index = 1; index < data.length; index--) {
+        const element1 = data[index].y - 1;
+        const element2 = data[index].y;
+        shiftedValues.push({
+            x: data[index].x, 
+            y: element2-element1
+        });
+    }
+    return shiftedValues;
+}
+
+function getMovingData(func) {
+    var data = movingSeries;
+    if (func == "log") {
+        data = applyLog(data);
+    } else if (func == "exp_decay") {
+        data = exponentialDecay(/* values */data, /* halfLife */12);
+    } else if (func == "sub_rolling_mean") {
+        data = subtractRollingMean(data, movingSeriesRollingMean);
+    } else if (func == "time shifting") {
+        data = timeShift(data);
+    }
+    return data;
+}
+
+function getMovingRollingMean() {
+    return movingSeriesRollingMean;
+}
+
+function getMovingRollingStddev() {
+    return movingSeriesRollingStddev;
+}
+
+function getMovingCovariance() {
+    return movingSeriesCov;
+}
+
+
 var w = 800;
 var h = 500;
-
 
 // variables and setting up the svg element
 var margin = {top: 20, right: 20, bottom: 100, left: 100},
@@ -33,6 +139,8 @@ var background =
         .on("click", click);
 
 var myLine = mySVG.append("path");
+var myLine2 = mySVG.append("path");
+var myLine3 = mySVG.append("path");
 var circle = mySVG.append("circle")
                 .attr("r", 4)
                 .attr("fill", "rgb(205,23,25)")
@@ -116,33 +224,39 @@ function point(){
     .attr("cy", pos.y);
 }
 
-var currentFunction = "fft";
+var currentFunction = "normal";
 
-function updateYValues(freq) {
-    if (currentFunction == "fft") {
-        yValues = fftFunction(plotstart, plotrange, stepsize);
-    } else if (currentFunction == "integrand") {
-        yValues = integrandFunction(plotstart, plotrange, stepsize, freq);
-    } else if (currentFunction == "original") {
-        yValues = originalFunction(plotstart, plotrange, stepsize);
-    }
-    xValues = xAxisValues(plotstart, plotrange, stepsize);
+function updateValues(func) {
+    xValues = xAxisValues(func);
+    yValues = yAxisValues(func);
 }
+
+function yAxisValues(func)
+{ 
+    var answer = [];
+    var answer_data = getStationaryData(func);
+    answer_data.forEach(function(d) {
+        answer.push(+d.y);
+    })
+    return answer;
+};
+
+function xAxisValues(func)
+{
+    var answer = [];
+    var answer_data = getStationaryData(func);
+    answer_data.forEach(function(d) {
+        answer.push(+d.x);
+    })
+    return answer;
+};
 
 var freq = 1;
 
 function click() {
     // Update the function to display.
-    if (currentFunction == "fft") {
-        var _x = d3.mouse(this)[0];
-        freq = Math.round((_x/width)*50);
-        currentFunction = "integrand";
-    } else if (currentFunction == "integrand") {
-        currentFunction = "original";
-    } else {
-        currentFunction = "fft";
-    }
-    updateYValues(freq);
+    var _x = d3.mouse(this)[0];
+    updateValues(_x, currentFunction);
     plotLine(xValues, yValues);
 }
 
@@ -164,58 +278,13 @@ var plotstart = -3,
 
 var yValues, xValues; // declares the values
 
-function fftFunction(startinput, stopinput, steprange)
-{ 
-    var answer = [];
-    var answer_data = [{'x': 0.0, 'y': 1.6783729961389328e-13}, {'x': 1.0, 'y': 1.5487235825058293e-12}, {'x': 2.0, 'y': 2.4389963324822062e-11}, {'x': 3.0, 'y': 3.2833748081490455e-10}, {'x': 4.0, 'y': 3.7710754974927514e-09}, {'x': 5.0, 'y': 3.6951064802241215e-08}, {'x': 6.0, 'y': 3.088921317365515e-07}, {'x': 7.0, 'y': 2.2029507148913913e-06}, {'x': 8.0, 'y': 1.340357890053119e-05}, {'x': 9.000000000000002, 'y': 6.957525818527252e-05}, {'x': 10.0, 'y': 0.0003081108099644676}, {'x': 11.0, 'y': 0.0011640646536165867}, {'x': 12.0, 'y': 0.003752021569635216}, {'x': 13.000000000000002, 'y': 0.010317431830553593}, {'x': 14.0, 'y': 0.024204490615861916}, {'x': 15.0, 'y': 0.04844381580166142}, {'x': 16.0, 'y': 0.08271776634259062}, {'x': 17.0, 'y': 0.12049729852701643}, {'x': 18.000000000000004, 'y': 0.1497524305385166}, {'x': 19.0, 'y': 0.1587773345088293}, {'x': 20.0, 'y': 0.14362207318660675}, {'x': 21.0, 'y': 0.11083372601419213}, {'x': 22.0, 'y': 0.07296939295598288}, {'x': 23.0, 'y': 0.040985250190946336}, {'x': 24.0, 'y': 0.019639593989152455}, {'x': 25.0, 'y': 0.008028889441622918}, {'x': 26.000000000000004, 'y': 0.002800248076565688}, {'x': 27.0, 'y': 0.0008332121515333897}, {'x': 28.0, 'y': 0.0002115108935991222}, {'x': 29.0, 'y': 4.580658789363139e-05}, {'x': 30.0, 'y': 8.463328590637672e-06}, {'x': 31.0, 'y': 1.3340512690477326e-06}, {'x': 32.0, 'y': 1.7939977604178526e-07}, {'x': 33.0, 'y': 2.058208280416891e-08}, {'x': 34.0, 'y': 2.0145353345201045e-09}, {'x': 35.0, 'y': 1.6821997883438255e-10}, {'x': 36.00000000000001, 'y': 1.1984242960785684e-11}, {'x': 37.0, 'y': 7.280783051077987e-13}, {'x': 38.0, 'y': 3.803046734047889e-14}, {'x': 39.0, 'y': 1.4274020419254591e-15}, {'x': 40.0, 'y': 3.003438763032575e-16}, {'x': 41.0, 'y': 2.1652123591103134e-16}, {'x': 42.0, 'y': 2.1087689996778625e-16}, {'x': 43.0, 'y': 1.922214095778986e-16}, {'x': 44.0, 'y': 1.862217258768948e-16}, {'x': 45.0, 'y': 1.6956825880925352e-16}, {'x': 46.0, 'y': 1.6789709956343432e-16}, {'x': 47.0, 'y': 1.5191308309458978e-16}, {'x': 48.0, 'y': 1.5685358271094222e-16}, {'x': 49.0, 'y': 1.3367974713977395e-16}, {'x': 50.0, 'y': 1.4364881827966036e-16}, {'x': 51.00000000000001, 'y': 1.2263418317615683e-16}, {'x': 52.00000000000001, 'y': 1.2324857952616539e-16}, {'x': 53.0, 'y': 1.0838496385938315e-16}, {'x': 54.0, 'y': 1.439556441397653e-16}, {'x': 55.0, 'y': 3.9920622240881665e-17}, {'x': 56.0, 'y': 2.231192840714982e-16}, {'x': 57.0, 'y': 7.350018576140709e-17}, {'x': 58.0, 'y': 2.961897031280619e-16}, {'x': 59.00000000000001, 'y': 1.2871335620634406e-16}, {'x': 60.0, 'y': 2.8528247707966126e-16}, {'x': 61.0, 'y': 8.238224308950847e-17}, {'x': 62.0, 'y': 1.8765853642693287e-16}, {'x': 63.0, 'y': 2.1099394739909966e-17}, {'x': 64.0, 'y': 8.903066574801421e-17}, {'x': 65.0, 'y': 7.581715278431592e-17}, {'x': 66.0, 'y': 5.626645918779726e-17}, {'x': 67.0, 'y': 8.273328089998602e-17}, {'x': 68.0, 'y': 5.685233952056547e-17}, {'x': 69.0, 'y': 6.74916720960793e-17}, {'x': 70.0, 'y': 5.292453094258445e-17}, {'x': 71.00000000000001, 'y': 6.49332841660332e-17}, {'x': 72.00000000000001, 'y': 4.105431310810399e-17}, {'x': 73.0, 'y': 6.794825804503309e-17}, {'x': 74.0, 'y': 4.238301780535196e-17}, {'x': 75.0, 'y': 6.192513075132539e-17}, {'x': 76.0, 'y': 4.587503766605676e-17}, {'x': 77.0, 'y': 4.919867921618881e-17}, {'x': 78.0, 'y': 4.1689038353992097e-17}, {'x': 79.0, 'y': 4.538836329325275e-17}, {'x': 80.0, 'y': 3.79636880841148e-17}, {'x': 81.0, 'y': 4.6659667719628054e-17}, {'x': 82.0, 'y': 3.9817917992253647e-17}, {'x': 83.0, 'y': 3.911390455782568e-17}, {'x': 84.0, 'y': 4.998381352898535e-17}, {'x': 85.0, 'y': 3.962439958161728e-17}, {'x': 86.0, 'y': 3.617740898161747e-17}, {'x': 87.00000000000001, 'y': 4.832623010564914e-17}, {'x': 88.0, 'y': 2.0150298559154656e-17}, {'x': 89.0, 'y': 4.920211690962241e-17}, {'x': 90.0, 'y': 2.2130542087872278e-17}, {'x': 91.0, 'y': 4.489074964925129e-17}, {'x': 92.0, 'y': 1.3410781685680881e-17}, {'x': 93.0, 'y': 8.764573915544344e-17}, {'x': 94.0, 'y': 6.605372148922713e-17}, {'x': 95.0, 'y': 1.688182112315088e-16}, {'x': 96.0, 'y': 1.480831284964827e-16}, {'x': 97.0, 'y': 2.1998640496693037e-16}, {'x': 98.0, 'y': 1.6352624513293968e-16}, {'x': 99.0, 'y': 1.9159065474652526e-16}];
-    answer_data.forEach(function(d) {
-        answer.push(+d.y);
-    })
-    return answer;
-};
 
-function integrandFunction(startinput, stopinput, steprange, freq) 
-{ 
-    return d3.range(startinput, stopinput, steprange).map(function(i) 
-    {
-        return Math.exp(-2 * Math.PI * (freq * i)) * (Math.cos(2 * Math.PI * 3 * i) * Math.exp(-Math.PI * i * i));
-    });
-};
 
-function originalFunction(startinput, stopinput, steprange) 
-{ 
-    return d3.range(-3, 3, steprange).map(function(i) 
-    {
-        return (Math.cos(2 * Math.PI * 3 * i) * Math.exp(-Math.PI * i * i));
-        
-    })
-};
+xValues = [];
+yValues = [];
+updateValues(currentFunction);
 
-function fftXAxisValues() {
-    var answer = [];
-    var answer_data = [{'x': 0.0, 'y': 1.6783729961389328e-13}, {'x': 1.0, 'y': 1.5487235825058293e-12}, {'x': 2.0, 'y': 2.4389963324822062e-11}, {'x': 3.0, 'y': 3.2833748081490455e-10}, {'x': 4.0, 'y': 3.7710754974927514e-09}, {'x': 5.0, 'y': 3.6951064802241215e-08}, {'x': 6.0, 'y': 3.088921317365515e-07}, {'x': 7.0, 'y': 2.2029507148913913e-06}, {'x': 8.0, 'y': 1.340357890053119e-05}, {'x': 9.000000000000002, 'y': 6.957525818527252e-05}, {'x': 10.0, 'y': 0.0003081108099644676}, {'x': 11.0, 'y': 0.0011640646536165867}, {'x': 12.0, 'y': 0.003752021569635216}, {'x': 13.000000000000002, 'y': 0.010317431830553593}, {'x': 14.0, 'y': 0.024204490615861916}, {'x': 15.0, 'y': 0.04844381580166142}, {'x': 16.0, 'y': 0.08271776634259062}, {'x': 17.0, 'y': 0.12049729852701643}, {'x': 18.000000000000004, 'y': 0.1497524305385166}, {'x': 19.0, 'y': 0.1587773345088293}, {'x': 20.0, 'y': 0.14362207318660675}, {'x': 21.0, 'y': 0.11083372601419213}, {'x': 22.0, 'y': 0.07296939295598288}, {'x': 23.0, 'y': 0.040985250190946336}, {'x': 24.0, 'y': 0.019639593989152455}, {'x': 25.0, 'y': 0.008028889441622918}, {'x': 26.000000000000004, 'y': 0.002800248076565688}, {'x': 27.0, 'y': 0.0008332121515333897}, {'x': 28.0, 'y': 0.0002115108935991222}, {'x': 29.0, 'y': 4.580658789363139e-05}, {'x': 30.0, 'y': 8.463328590637672e-06}, {'x': 31.0, 'y': 1.3340512690477326e-06}, {'x': 32.0, 'y': 1.7939977604178526e-07}, {'x': 33.0, 'y': 2.058208280416891e-08}, {'x': 34.0, 'y': 2.0145353345201045e-09}, {'x': 35.0, 'y': 1.6821997883438255e-10}, {'x': 36.00000000000001, 'y': 1.1984242960785684e-11}, {'x': 37.0, 'y': 7.280783051077987e-13}, {'x': 38.0, 'y': 3.803046734047889e-14}, {'x': 39.0, 'y': 1.4274020419254591e-15}, {'x': 40.0, 'y': 3.003438763032575e-16}, {'x': 41.0, 'y': 2.1652123591103134e-16}, {'x': 42.0, 'y': 2.1087689996778625e-16}, {'x': 43.0, 'y': 1.922214095778986e-16}, {'x': 44.0, 'y': 1.862217258768948e-16}, {'x': 45.0, 'y': 1.6956825880925352e-16}, {'x': 46.0, 'y': 1.6789709956343432e-16}, {'x': 47.0, 'y': 1.5191308309458978e-16}, {'x': 48.0, 'y': 1.5685358271094222e-16}, {'x': 49.0, 'y': 1.3367974713977395e-16}, {'x': 50.0, 'y': 1.4364881827966036e-16}, {'x': 51.00000000000001, 'y': 1.2263418317615683e-16}, {'x': 52.00000000000001, 'y': 1.2324857952616539e-16}, {'x': 53.0, 'y': 1.0838496385938315e-16}, {'x': 54.0, 'y': 1.439556441397653e-16}, {'x': 55.0, 'y': 3.9920622240881665e-17}, {'x': 56.0, 'y': 2.231192840714982e-16}, {'x': 57.0, 'y': 7.350018576140709e-17}, {'x': 58.0, 'y': 2.961897031280619e-16}, {'x': 59.00000000000001, 'y': 1.2871335620634406e-16}, {'x': 60.0, 'y': 2.8528247707966126e-16}, {'x': 61.0, 'y': 8.238224308950847e-17}, {'x': 62.0, 'y': 1.8765853642693287e-16}, {'x': 63.0, 'y': 2.1099394739909966e-17}, {'x': 64.0, 'y': 8.903066574801421e-17}, {'x': 65.0, 'y': 7.581715278431592e-17}, {'x': 66.0, 'y': 5.626645918779726e-17}, {'x': 67.0, 'y': 8.273328089998602e-17}, {'x': 68.0, 'y': 5.685233952056547e-17}, {'x': 69.0, 'y': 6.74916720960793e-17}, {'x': 70.0, 'y': 5.292453094258445e-17}, {'x': 71.00000000000001, 'y': 6.49332841660332e-17}, {'x': 72.00000000000001, 'y': 4.105431310810399e-17}, {'x': 73.0, 'y': 6.794825804503309e-17}, {'x': 74.0, 'y': 4.238301780535196e-17}, {'x': 75.0, 'y': 6.192513075132539e-17}, {'x': 76.0, 'y': 4.587503766605676e-17}, {'x': 77.0, 'y': 4.919867921618881e-17}, {'x': 78.0, 'y': 4.1689038353992097e-17}, {'x': 79.0, 'y': 4.538836329325275e-17}, {'x': 80.0, 'y': 3.79636880841148e-17}, {'x': 81.0, 'y': 4.6659667719628054e-17}, {'x': 82.0, 'y': 3.9817917992253647e-17}, {'x': 83.0, 'y': 3.911390455782568e-17}, {'x': 84.0, 'y': 4.998381352898535e-17}, {'x': 85.0, 'y': 3.962439958161728e-17}, {'x': 86.0, 'y': 3.617740898161747e-17}, {'x': 87.00000000000001, 'y': 4.832623010564914e-17}, {'x': 88.0, 'y': 2.0150298559154656e-17}, {'x': 89.0, 'y': 4.920211690962241e-17}, {'x': 90.0, 'y': 2.2130542087872278e-17}, {'x': 91.0, 'y': 4.489074964925129e-17}, {'x': 92.0, 'y': 1.3410781685680881e-17}, {'x': 93.0, 'y': 8.764573915544344e-17}, {'x': 94.0, 'y': 6.605372148922713e-17}, {'x': 95.0, 'y': 1.688182112315088e-16}, {'x': 96.0, 'y': 1.480831284964827e-16}, {'x': 97.0, 'y': 2.1998640496693037e-16}, {'x': 98.0, 'y': 1.6352624513293968e-16}, {'x': 99.0, 'y': 1.9159065474652526e-16}];
-    answer_data.forEach(function(d) {
-        answer.push(+d.x);
-    })
-    return answer;
-}
-
-function xAxisValues(startinput, stopinput, steprange) 
-{
-    if (currentFunction == "fft") {
-        return fftXAxisValues();
-    } else {
-        return d3.range(-3, 3, steprange).map(function(i) 
-        {
-            return i;
-        })
-    }
-};
-
-xValues = xAxisValues(plotstart, plotrange, stepsize); // the generates x-values
-yValues = fftFunction(); //these are the y-values, the up and down of the sinuscurve
-
-function plotLine(newXValues, newYValues) {
+function plotGraph(newXValues, newYValues) {
     var title;
     if (currentFunction == "fft") {
         title = "Fourier Transform of Original Function";
@@ -234,20 +303,8 @@ function plotLine(newXValues, newYValues) {
         .transition().duration(1000)
         .text(title);
 
-    // create the domain for the values
-    // scale the data to fit in our svg
-    var scaleX = d3.scale.linear()
-        .domain([d3.min(newXValues), d3.max(newXValues)])
-        .range([0, width]);
-
-    var scaleY = d3.scale.linear()
-        .domain([d3.min(newYValues), d3.max(newYValues)])
-        .range([height, 0]); //remember the order of this one! otherwise you'll get an opposite sinus curve
-
-    // picks out the data for the line
-    var line = d3.svg.line()
-        .x(function(d) { return scaleX(d.x); }) //we define x and y in the foreach function below (a little unorderly yes, admitted)
-        .y(function(d) { return scaleY(d.y); });
+    var rangeX = [d3.min(newXValues), d3.max(newXValues)];
+    var rangeY = [d3.min(newYValues), d3.max(newYValues)];
 
     // now need to put both xValues and yValues in the same object to be able to send them to the "line" above in a method we will create below:
     var ourValues = [];
@@ -255,15 +312,6 @@ function plotLine(newXValues, newYValues) {
     newXValues.forEach( function (item, index) {     
         ourValues.push( { x: newXValues[index], y: newYValues[index] });   
     });
-
-    // now puts the data into the line function
-    // creates the line
-    myLine
-        .attr("class", "line")
-        .datum(ourValues)
-        .attr("stroke", function (d) {console.log("what is this"); console.log(d); return "red";})
-        .transition().duration(1000)
-        .attr("d", line);
 
     //appends the axis to what doesn't exist yet
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
@@ -283,21 +331,14 @@ function plotLine(newXValues, newYValues) {
 
     // y goes from a negative to a positive value
     y.domain([d3.min(ourValues, function(d) 
-    {
-        if (currentFunction ==  "integrand") {
-            return (d.y).toExponential()
+        {
+            return d.y; 
+            
+    }), d3.max(ourValues, function(d)
+        { 
+            return d.y;
         }
-        return d.y; 
-        
-    }), 
-
-    d3.max(ourValues, function(d) 
-    { 
-        if (currentFunction ==  "integrand") {
-            return (d.y).toExponential()
-        }
-        return d.y;
-    })]);
+    )]);
 
     //The axis and some labels - apparenly there comes some default values from 0.0-1.0 when the axis are added without binding them to some values
     xlabelaxis
@@ -308,6 +349,85 @@ function plotLine(newXValues, newYValues) {
     ylabelaxis
         .transition().duration(1000)
         .call(yAxis)
+
+    return [rangeX, rangeY];
 }
 
-plotLine(xValues, yValues);
+function plotLine(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
+    console.log(rangeX);
+    console.log(rangeY);
+    // create the domain for the values
+    // scale the data to fit in our svg
+    var scaleX = d3.scale.linear()
+        .domain(rangeX)
+        .range([0, width]);
+
+    var scaleY = d3.scale.linear()
+        .domain(rangeY)
+        .range([height, 0]); //remember the order of this one! otherwise you'll get an opposite sinus curve
+
+    // picks out the data for the line
+    var line = d3.svg.line()
+        .x(function(d) { return scaleX(d.x); }) //we define x and y in the foreach function below (a little unorderly yes, admitted)
+        .y(function(d) { return scaleY(d.y); });
+
+    // now need to put both xValues and yValues in the same object to be able to send them to the "line" above in a method we will create below:
+    var ourValues = [];
+
+    newXValues.forEach( function (item, index) {   
+        if (!isNaN(newYValues[index])) {
+            ourValues.push( { x: newXValues[index], y: newYValues[index] });   
+        }
+    });
+
+    console.log("Our values", ourValues);
+
+    // now puts the data into the line function
+    // creates the line
+    lineSVG
+        .attr("class", "line")
+        .datum(ourValues)
+        .attr("stroke", function (d) {return color;})
+        .transition().duration(1000)
+        .attr("d", line);
+    
+    return [scaleX, scaleY];
+}
+
+var rollingMeanValues = getStationaryRollingMean();
+var rollingMeanX = [];
+for (const idx in rollingMeanValues) {
+    let val = rollingMeanValues[idx];
+    rollingMeanX.push(val.x);
+}
+var rollingMeanY = [];
+for (const idx in rollingMeanValues) {
+    let val = rollingMeanValues[idx];
+    rollingMeanY.push(val.y);
+}
+
+var rollingStddevValues = getStationaryRollingStddev();
+var rollingStddevX = [];
+for (const idx in rollingStddevValues) {
+    let val = rollingStddevValues[idx];
+    rollingStddevX.push(val.x);
+}
+var rollingStddevY = [];
+for (const idx in rollingStddevValues) {
+    let val = rollingStddevValues[idx];
+    rollingStddevY.push(val.y);
+}
+
+// TODO(LewisErick): Find a better way to unify input to identify x and y axis
+var allX = [];
+allX = allX.concat(xValues, rollingMeanX, rollingStddevX);
+
+var allY = [];
+allY = allY.concat(yValues, rollingMeanY, rollingStddevY);
+
+var ranges = plotGraph(allX, allY);
+
+// Plot lines.
+plotLine(xValues, yValues, "red", myLine, ranges[0], ranges[1]);
+plotLine(rollingMeanX, rollingMeanY, "blue", myLine2, ranges[0], ranges[1]);
+plotLine(rollingStddevX, rollingStddevY, "green", myLine3, ranges[0], ranges[1]);
