@@ -63,4 +63,4 @@ The intuition behind the median is that it splits the population evenly into two
 - 99% -> ± 2.326 standard deviations
 
 ### Standard Error for Linear Regression
-<img src="img/lin_reg_stderr_img.png"/>
+<img src="img/lin_reg_stderr.png"/>
