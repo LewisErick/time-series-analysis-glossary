@@ -455,8 +455,7 @@ function plotLine(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
         .datum(ourValues)
         .attr("stroke", function (d) {return color;})
         .transition().duration(1000)
-        .attr("d", line)
-        .attr("transform", "translate(0" + "," + margin.top + ")");
+        .attr("d", line);
     
     return [scaleX, scaleY];
 }
@@ -498,7 +497,7 @@ function plotLineMoving(newXValues, newYValues, color, lineSVG, rangeX, rangeY) 
         .attr("stroke", function (d) {return color;})
         .transition().duration(1000)
         .attr("d", line)
-        .attr("transform", "translate(" + (stationaryWidth + margin.left) + "," + margin.top + ")");
+        .attr("transform", "translate(" + (stationaryWidth + margin.left) + "," + 0 + ")");
     
     return [scaleX, scaleY];
 }
@@ -587,39 +586,58 @@ for (const idx in rollingStddevValues) {
     rollingStddevY.push(val.y);
 }
 
+var movingData = getMovingData();
+var mvxValues = [];
+for (const idx in movingData) {
+    let val = movingData[idx];
+    mvxValues.push(val.x);
+}
+var mvyValues = [];
+for (const idx in movingData) {
+    let val = movingData[idx];
+    mvyValues.push(val.y);
+}
+
 var mvrollingMeanValues = getMovingRollingMean();
 var mvrollingMeanX = [];
-// for (const idx in mvrollingMeanValues) {
-//     let val = mvrollingMeanValues[idx];
-//     mvrollingMeanX.push(val.x);
-// }
+for (const idx in mvrollingMeanValues) {
+    let val = mvrollingMeanValues[idx];
+    mvrollingMeanX.push(val.x);
+}
 var mvrollingMeanY = [];
-// for (const idx in mvrollingMeanValues) {
-//     let val = mvrollingMeanValues[idx];
-//     mvrollingMeanY.push(val.y);
-// }
+for (const idx in mvrollingMeanValues) {
+    let val = mvrollingMeanValues[idx];
+    mvrollingMeanY.push(val.y);
+}
 
 var mvrollingStddevValues = getMovingRollingStddev();
 var mvrollingStddevX = [];
-// for (const idx in mvrollingStddevValues) {
-//     let val = mvrollingStddevValues[idx];
-//     mvrollingStddevX.push(val.x);
-// }
+for (const idx in mvrollingStddevValues) {
+    let val = mvrollingStddevValues[idx];
+    mvrollingStddevX.push(val.x);
+}
 var mvrollingStddevY = [];
-// for (const idx in mvrollingStddevValues) {
-//     let val = mvrollingStddevValues[idx];
-//     mvrollingStddevY.push(val.y);
-// }
+for (const idx in mvrollingStddevValues) {
+    let val = mvrollingStddevValues[idx];
+    mvrollingStddevY.push(val.y);
+}
 
 // TODO(LewisErick): Find a better way to unify input to identify x and y axis
-var allX = [];
-allX = allX.concat(xValues, rollingMeanX, rollingStddevX, mvrollingMeanX, mvrollingStddevX);
+var statX = [];
+statX = statX.concat(xValues, rollingMeanX, rollingStddevX);
 
-var allY = [];
-allY = allY.concat(yValues, rollingMeanY, rollingStddevY, mvrollingMeanY, mvrollingStddevY);
+var statY = [];
+statY = statY.concat(yValues, rollingMeanY, rollingStddevY);
 
-var ranges = plotGraph(allX, allY);
-var rangesMoving = plotGraphMoving(allX, allY);
+var ranges = plotGraph(statX, statY);
+
+var movX = [];
+movX = movX.concat(mvxValues);
+
+var movY = [];
+movY = movY.concat(mvyValues);
+
+var rangesMoving = plotGraphMoving(movX, movY);
 
 // Plot lines.
 plotLine(xValues, yValues, "red", myLine, ranges[0], ranges[1]);
@@ -627,6 +645,6 @@ plotLine(rollingMeanX, rollingMeanY, "blue", myLine2, ranges[0], ranges[1]);
 plotLine(rollingStddevX, rollingStddevY, "green", myLine3, ranges[0], ranges[1]);
 
 // Plot moving time-series lines.
-plotLineMoving(xValues, yValues, "red", mvMyLine, ranges[0], ranges[1]);
-plotLineMoving(rollingMeanX, rollingMeanY, "blue", mvMyLine2, ranges[0], ranges[1]);
-plotLineMoving(rollingStddevX, rollingStddevY, "green", mvMyLine3, ranges[0], ranges[1]);
+plotLineMoving(mvxValues, mvyValues, "red", mvMyLine, rangesMoving[0], rangesMoving[1]);
+plotLineMoving(mvrollingMeanX, mvrollingMeanY, "blue", mvMyLine2, rangesMoving[0], rangesMoving[1]);
+plotLineMoving(mvrollingStddevX, mvrollingStddevY, "green", mvMyLine3, rangesMoving[0], rangesMoving[1]);
