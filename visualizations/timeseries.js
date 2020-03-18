@@ -116,6 +116,13 @@ var margin = {top: 20, right: 20, bottom: 100, left: 100},
 stationaryWidth = width/2;
 movingWidth = width/2;
 
+var mySVG = d3.select("#graph-div")
+        .append("svg")
+        .attr("width", width + (2*margin.left) + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
 /* STATIONARY TIME-SERIES SVG START */
 
 var x = d3.scale.linear()
@@ -123,13 +130,6 @@ var x = d3.scale.linear()
 
 var y = d3.scale.linear()
         .range([height, 0]);
-
-var mySVG = d3.select("#graph-div")
-        .append("svg")
-        .attr("width", stationaryWidth + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var background =
     mySVG.append("rect")
@@ -199,73 +199,68 @@ var xMoving = d3.scale.linear()
 var yMoving = d3.scale.linear()
         .range([height, 0]);
 
-var svgMoving = d3.select("#graph-div")
-                  .append("svg")
-                  .attr("width", movingWidth + margin.left + margin.right)
-                  .attr("height", height + margin.top + margin.bottom)
-                  .append("g")
-                  .attr("transform", "translate(" + (margin.left + stationaryWidth) + "," + margin.top + ")");
-
-var backgroundMoving =
-    svgMoving.append("rect")
-             .attr("width", movingWidth + margin.left + margin.right)
-             .attr("height", height + margin.top + margin.bottom)
-             .attr("fill-opacity", "0")
-             .attr("fill", "white");
-            //  .on("mousemove", pointMoving)
-            //  .on("mouseover", overMoving)
-            //  .on("mouseleave", leaveMoving)
-            //  .on("click", clickMoving);
-
 // mv -> moving
-var mvLine = svgMoving.append("path");
-var mvLine2 = svgMoving.append("path");
-var mvLine3 = svgMoving.append("path");
-var mvCircle = svgMoving.append("circle")
-                    .attr("r", 4)
-                    .attr("fill", "rgb(205,23,25)")
-                    .style("opacity", "0")
-                    .attr("pointer-events", "none")
-                    .attr("stroke-width", "2.5")
-                    .attr("stroke", "white");
+var mvBackground =
+    mySVG.append("rect")
+        .attr("width", movingWidth + (2 * margin.left) + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .attr("transform", "translate(" + stationaryWidth + ",0)")
+        .attr("fill-opacity", "0")
+        .attr("fill", "white")
+        .on("mousemove", point)
+        .on("mouseover", over)
+        .on("mouseleave", leave)
+        .on("click", click);
 
-var mvYaxislabel = svgMoving.append("text")
-                        .attr("transform", "rotate(-90)")
-                        .attr("y", 0 - margin.left)
-                        .attr("x",0 - (height / 2))
-                        .attr("dy", "1em")
-                        .style("text-anchor", "middle");
+var mvMyLine = mySVG.append("path");
+var mvMyLine2 = mySVG.append("path");
+var mvMyLine3 = mySVG.append("path");
+var mvCircle = mySVG.append("circle")
+                .attr("r", 4)
+                .attr("fill", "rgb(205,23,25)")
+                .style("opacity", "0")
+                .attr("pointer-events", "none")
+                .attr("stroke-width", "2.5")
+                .attr("stroke", "white");
 
-var mvTitleSVG = svgMoving.append("text")
-                      .attr("x", movingWidth / 2)
-                      .attr("y",  0)
+var mvyaxislabel = mySVG.append("text")
+                      .attr("transform", "rotate(-90)")
+                      .attr("y", stationaryWidth)
+                      .attr("x", 0  - (height / 2))
+                      .attr("dy", "1em")
                       .style("text-anchor", "middle");
 
-var mvTooltipX = svgMoving.append("text")
-                      .attr("x", 0)
-                      .attr("y", 0)
-                      .style("opacity", "0");
+var mvtitleSVG = mySVG.append("text")
+        .attr("x", stationaryWidth + margin.left + (movingWidth / 2))
+        .attr("y",  0)
+        .style("text-anchor", "middle");
+
+var mvtooltipX = mySVG.append("text")
+        .attr("x", 0)
+        .attr("y", 0)
+        .style("opacity", "0");
         
-var mvTooltipY = svgMoving.append("text")
-                            .attr("x", 0)
-                            .attr("y", 0)
-                            .style("opacity", "0");
+var mvtooltipY = mySVG.append("text")
+        .attr("x", 0)
+        .attr("y", 0)
+        .style("opacity", "0");
 
-var mvXLabelaxis = svgMoving.append("g")
-                    .attr("class", "x axis")
-                    .attr("transform", "translate(0," + height/2 + ")") //sets the vertical axis in the middle;
+var mvxlabelaxis = mySVG.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(" + (stationaryWidth + margin.left) + "," + (height/2) + ")") //sets the vertical axis in the middle;
 
-var mvYLabelaxis = svgMoving.append("g")
-    .attr("class", "y axis");
+var mvylabelaxis = mySVG.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(" + (stationaryWidth + margin.left) + ",0)") //sets the vertical axis in the middle;
 
-var mvXAxislabel = svgMoving.append("text")             
+var mvxaxislabel = mySVG.append("text")             
                       .attr("transform",
-                            "translate(" + (movingWidth / 2) + " ," + 
+                            "translate(" + (stationaryWidth + margin.left + (movingWidth / 2)) + " ," + 
                                            (height + margin.top + 20) + ")")
                       .style("text-anchor", "middle")
                       .text("Date");
 
-/* STATIONARY TIME-SERIES SVG END */
+/* MOVING TIME-SERIES SVG END */
 
 function point(){
     var pathEl = myLine.node();
@@ -359,8 +354,6 @@ var plotstart = -3,
     plotrange = plotrange_real + stepsize; // adjusted for the "range" method using stepsize as a 3rd parameter
 
 var yValues, xValues; // declares the values
-
-
 
 xValues = [];
 yValues = [];
@@ -462,9 +455,112 @@ function plotLine(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
         .datum(ourValues)
         .attr("stroke", function (d) {return color;})
         .transition().duration(1000)
-        .attr("d", line);
+        .attr("d", line)
+        .attr("transform", "translate(0" + "," + margin.top + ")");
     
     return [scaleX, scaleY];
+}
+
+function plotLineMoving(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
+    console.log(rangeX);
+    console.log(rangeY);
+    // create the domain for the values
+    // scale the data to fit in our svg
+    var scaleX = d3.scale.linear()
+        .domain(rangeX)
+        .range([0, stationaryWidth]);
+
+    var scaleY = d3.scale.linear()
+        .domain(rangeY)
+        .range([height, 0]); //remember the order of this one! otherwise you'll get an opposite sinus curve
+
+    // picks out the data for the line
+    var line = d3.svg.line()
+        .x(function(d) { return scaleX(d.x); }) //we define x and y in the foreach function below (a little unorderly yes, admitted)
+        .y(function(d) { return scaleY(d.y); });
+
+    // now need to put both xValues and yValues in the same object to be able to send them to the "line" above in a method we will create below:
+    var ourValues = [];
+
+    newXValues.forEach( function (item, index) {   
+        if (!isNaN(newYValues[index])) {
+            ourValues.push( { x: newXValues[index], y: newYValues[index] });   
+        }
+    });
+
+    console.log("Our values", ourValues);
+
+    // now puts the data into the line function
+    // creates the line
+    lineSVG
+        .attr("class", "line")
+        .datum(ourValues)
+        .attr("stroke", function (d) {return color;})
+        .transition().duration(1000)
+        .attr("d", line)
+        .attr("transform", "translate(" + (stationaryWidth + margin.left) + "," + margin.top + ")");
+    
+    return [scaleX, scaleY];
+}
+
+function plotGraphMoving(newXValues, newYValues) {
+    var title;
+    title = "Non-Stationary Time-Series of Births";
+    mvyaxislabel.text("Days");
+    mvxaxislabel.text("Births");
+
+    mvtitleSVG
+        .transition().duration(1000)
+        .text(title);
+
+    var rangeX = [d3.min(newXValues), d3.max(newXValues)];
+    var rangeY = [d3.min(newYValues), d3.max(newYValues)];
+
+    // now need to put both xValues and yValues in the same object to be able to send them to the "line" above in a method we will create below:
+    var ourValues = [];
+
+    newXValues.forEach( function (item, index) {     
+        ourValues.push( { x: newXValues[index], y: newYValues[index] });   
+    });
+
+    //appends the axis to what doesn't exist yet
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+
+    //Make the axis, have defined x and y at the top already
+    x.domain([d3.min(ourValues, function(d) 
+    { 
+        return d.x; 
+        
+    }), d3.max(ourValues, function(d) 
+    { 
+        return d.x; 
+    })]);
+
+
+    // y goes from a negative to a positive value
+    y.domain([d3.min(ourValues, function(d) 
+        {
+            return d.y; 
+            
+    }), d3.max(ourValues, function(d)
+        { 
+            return d.y;
+        }
+    )]);
+
+    //The axis and some labels - apparenly there comes some default values from 0.0-1.0 when the axis are added without binding them to some values
+    mvxlabelaxis
+        .transition().duration(1000)
+        .call(xAxis)
+
+    
+    mvylabelaxis
+        .transition().duration(1000)
+        .call(yAxis)
+
+    return [rangeX, rangeY];
 }
 
 var rollingMeanValues = getStationaryRollingMean();
@@ -491,16 +587,46 @@ for (const idx in rollingStddevValues) {
     rollingStddevY.push(val.y);
 }
 
+var mvrollingMeanValues = getMovingRollingMean();
+var mvrollingMeanX = [];
+// for (const idx in mvrollingMeanValues) {
+//     let val = mvrollingMeanValues[idx];
+//     mvrollingMeanX.push(val.x);
+// }
+var mvrollingMeanY = [];
+// for (const idx in mvrollingMeanValues) {
+//     let val = mvrollingMeanValues[idx];
+//     mvrollingMeanY.push(val.y);
+// }
+
+var mvrollingStddevValues = getMovingRollingStddev();
+var mvrollingStddevX = [];
+// for (const idx in mvrollingStddevValues) {
+//     let val = mvrollingStddevValues[idx];
+//     mvrollingStddevX.push(val.x);
+// }
+var mvrollingStddevY = [];
+// for (const idx in mvrollingStddevValues) {
+//     let val = mvrollingStddevValues[idx];
+//     mvrollingStddevY.push(val.y);
+// }
+
 // TODO(LewisErick): Find a better way to unify input to identify x and y axis
 var allX = [];
-allX = allX.concat(xValues, rollingMeanX, rollingStddevX);
+allX = allX.concat(xValues, rollingMeanX, rollingStddevX, mvrollingMeanX, mvrollingStddevX);
 
 var allY = [];
-allY = allY.concat(yValues, rollingMeanY, rollingStddevY);
+allY = allY.concat(yValues, rollingMeanY, rollingStddevY, mvrollingMeanY, mvrollingStddevY);
 
 var ranges = plotGraph(allX, allY);
+var rangesMoving = plotGraphMoving(allX, allY);
 
 // Plot lines.
 plotLine(xValues, yValues, "red", myLine, ranges[0], ranges[1]);
 plotLine(rollingMeanX, rollingMeanY, "blue", myLine2, ranges[0], ranges[1]);
 plotLine(rollingStddevX, rollingStddevY, "green", myLine3, ranges[0], ranges[1]);
+
+// Plot moving time-series lines.
+plotLineMoving(xValues, yValues, "red", mvMyLine, ranges[0], ranges[1]);
+plotLineMoving(rollingMeanX, rollingMeanY, "blue", mvMyLine2, ranges[0], ranges[1]);
+plotLineMoving(rollingStddevX, rollingStddevY, "green", mvMyLine3, ranges[0], ranges[1]);
