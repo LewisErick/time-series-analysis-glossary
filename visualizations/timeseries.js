@@ -204,10 +204,10 @@ var mvBackground =
     mySVG.append("rect")
         .attr("width", movingWidth + (2 * margin.left) + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-        .attr("transform", "translate(" + stationaryWidth + ",0)")
+        .attr("transform", "translate(" + (stationaryWidth + margin.left) + ",0)")
         .attr("fill-opacity", "0")
         .attr("fill", "white")
-        .on("mousemove", point)
+        .on("mousemove", pointMoving)
         .on("mouseover", over)
         .on("mouseleave", leave)
         .on("click", click);
@@ -267,6 +267,11 @@ function point(){
     var pathLength = pathEl.getTotalLength();
 
     var _x = d3.mouse(this)[0];
+
+    if (_x > stationaryWidth) {
+        return;
+    }
+
     var beginning = _x , end = pathLength, target;
     while (true) {
         target = Math.floor((beginning + end) / 2);
@@ -296,9 +301,53 @@ function point(){
     tooltipY.text("y: " + yValues[idx].toFixed(4));
     
     circle
-    .attr("opacity", 1)
-    .attr("cx", _x)
-    .attr("cy", pos.y);
+        .attr("opacity", 1)
+        .attr("cx", _x)
+        .attr("cy", pos.y);
+}
+
+function pointMoving(){
+    var pathEl = mvMyLine.node();
+    var pathLength = pathEl.getTotalLength();
+
+    var _x = d3.mouse(this)[0];
+
+    if (_x > stationaryWidth) {
+        return;
+    }
+
+    var beginning = _x , end = pathLength, target;
+    while (true) {
+        target = Math.floor((beginning + end) / 2);
+        pos = pathEl.getPointAtLength(target);
+
+        if ((target === end || target === beginning) && pos.x !== _x) {
+            break;
+        }
+        if (pos.x > _x){
+            end = target;
+        }else if(pos.x < _x){
+            beginning = target;
+        }else{
+            break; //position found
+        }
+    }
+    
+    // Update tooltip position and values.
+    tooltipX.attr("y", pos.y - 16);
+    tooltipX.attr("x", pos.x + 16  + stationaryWidth + margin.left);
+    idx = Math.round((pos.x  / movingWidth) * mvxValues.length);
+    tooltipX.text("x: " + mvxValues[idx].toFixed(4));
+    
+    tooltipY.attr("y", pos.y);
+    tooltipY.attr("x", pos.x + 16  + stationaryWidth + margin.left);
+    idx = Math.round((pos.x / movingWidth) * mvxValues.length);
+    tooltipY.text("y: " + mvyValues[idx].toFixed(4));
+    
+    circle
+        .attr("opacity", 1)
+        .attr("cx", _x + stationaryWidth + margin.left)
+        .attr("cy", pos.y);
 }
 
 var currentFunction = "normal";
@@ -420,8 +469,6 @@ function plotGraph(newXValues, newYValues) {
 }
 
 function plotLine(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
-    console.log(rangeX);
-    console.log(rangeY);
     // create the domain for the values
     // scale the data to fit in our svg
     var scaleX = d3.scale.linear()
@@ -445,8 +492,6 @@ function plotLine(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
             ourValues.push( { x: newXValues[index], y: newYValues[index] });   
         }
     });
-
-    console.log("Our values", ourValues);
 
     // now puts the data into the line function
     // creates the line
@@ -461,8 +506,6 @@ function plotLine(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
 }
 
 function plotLineMoving(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
-    console.log(rangeX);
-    console.log(rangeY);
     // create the domain for the values
     // scale the data to fit in our svg
     var scaleX = d3.scale.linear()
@@ -486,8 +529,6 @@ function plotLineMoving(newXValues, newYValues, color, lineSVG, rangeX, rangeY) 
             ourValues.push( { x: newXValues[index], y: newYValues[index] });   
         }
     });
-
-    console.log("Our values", ourValues);
 
     // now puts the data into the line function
     // creates the line
