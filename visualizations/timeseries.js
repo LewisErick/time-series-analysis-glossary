@@ -113,23 +113,27 @@ var margin = {top: 20, right: 20, bottom: 100, left: 100},
     width = w - margin.left - margin.right,
     height = h - margin.top - margin.bottom;
 
+stationaryWidth = width/2;
+movingWidth = width/2;
+
+/* STATIONARY TIME-SERIES SVG START */
+
 var x = d3.scale.linear()
-        .range([0, width]);
+        .range([0, stationaryWidth]);
 
 var y = d3.scale.linear()
         .range([height, 0]);
 
-// the svg element
 var mySVG = d3.select("#graph-div")
         .append("svg")
-        .attr("width", width + margin.left + margin.right)
+        .attr("width", stationaryWidth + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var background =
     mySVG.append("rect")
-        .attr("width", width + margin.left + margin.right)
+        .attr("width", stationaryWidth + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .attr("fill-opacity", "0")
         .attr("fill", "white")
@@ -157,7 +161,7 @@ var yaxislabel = mySVG.append("text")
                       .style("text-anchor", "middle");
 
 var titleSVG = mySVG.append("text")
-        .attr("x", width / 2)
+        .attr("x", stationaryWidth / 2)
         .attr("y",  0)
         .style("text-anchor", "middle");
 
@@ -180,10 +184,88 @@ var ylabelaxis = mySVG.append("g")
 
 var xaxislabel = mySVG.append("text")             
                       .attr("transform",
-                            "translate(" + (width/2) + " ," + 
+                            "translate(" + (stationaryWidth / 2) + " ," + 
                                            (height + margin.top + 20) + ")")
                       .style("text-anchor", "middle")
                       .text("Date");
+
+/* STATIONARY TIME-SERIES SVG END */
+
+/* MOVING TIME-SERIES SVG START */
+
+var xMoving = d3.scale.linear()
+        .range([0, movingWidth]);
+
+var yMoving = d3.scale.linear()
+        .range([height, 0]);
+
+var svgMoving = d3.select("#graph-div")
+                  .append("svg")
+                  .attr("width", movingWidth + margin.left + margin.right)
+                  .attr("height", height + margin.top + margin.bottom)
+                  .append("g")
+                  .attr("transform", "translate(" + (margin.left + stationaryWidth) + "," + margin.top + ")");
+
+var backgroundMoving =
+    svgMoving.append("rect")
+             .attr("width", movingWidth + margin.left + margin.right)
+             .attr("height", height + margin.top + margin.bottom)
+             .attr("fill-opacity", "0")
+             .attr("fill", "white");
+            //  .on("mousemove", pointMoving)
+            //  .on("mouseover", overMoving)
+            //  .on("mouseleave", leaveMoving)
+            //  .on("click", clickMoving);
+
+// mv -> moving
+var mvLine = svgMoving.append("path");
+var mvLine2 = svgMoving.append("path");
+var mvLine3 = svgMoving.append("path");
+var mvCircle = svgMoving.append("circle")
+                    .attr("r", 4)
+                    .attr("fill", "rgb(205,23,25)")
+                    .style("opacity", "0")
+                    .attr("pointer-events", "none")
+                    .attr("stroke-width", "2.5")
+                    .attr("stroke", "white");
+
+var mvYaxislabel = svgMoving.append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 0 - margin.left)
+                        .attr("x",0 - (height / 2))
+                        .attr("dy", "1em")
+                        .style("text-anchor", "middle");
+
+var mvTitleSVG = svgMoving.append("text")
+                      .attr("x", movingWidth / 2)
+                      .attr("y",  0)
+                      .style("text-anchor", "middle");
+
+var mvTooltipX = svgMoving.append("text")
+                      .attr("x", 0)
+                      .attr("y", 0)
+                      .style("opacity", "0");
+        
+var mvTooltipY = svgMoving.append("text")
+                            .attr("x", 0)
+                            .attr("y", 0)
+                            .style("opacity", "0");
+
+var mvXLabelaxis = svgMoving.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + height/2 + ")") //sets the vertical axis in the middle;
+
+var mvYLabelaxis = svgMoving.append("g")
+    .attr("class", "y axis");
+
+var mvXAxislabel = svgMoving.append("text")             
+                      .attr("transform",
+                            "translate(" + (movingWidth / 2) + " ," + 
+                                           (height + margin.top + 20) + ")")
+                      .style("text-anchor", "middle")
+                      .text("Date");
+
+/* STATIONARY TIME-SERIES SVG END */
 
 function point(){
     var pathEl = myLine.node();
@@ -210,12 +292,12 @@ function point(){
     // Update tooltip position and values.
     tooltipX.attr("y", pos.y - 16);
     tooltipX.attr("x", pos.x + 16);
-    idx = Math.round((pos.x / width) * xValues.length);
+    idx = Math.round((pos.x / stationaryWidth) * xValues.length);
     tooltipX.text("x: " + xValues[idx].toFixed(4));
     
     tooltipY.attr("y", pos.y);
     tooltipY.attr("x", pos.x + 16);
-    idx = Math.round((pos.x / width) * xValues.length);
+    idx = Math.round((pos.x / stationaryWidth) * xValues.length);
     tooltipY.text("y: " + yValues[idx].toFixed(4));
     
     circle
@@ -286,19 +368,10 @@ updateValues(currentFunction);
 
 function plotGraph(newXValues, newYValues) {
     var title;
-    if (currentFunction == "fft") {
-        title = "Fourier Transform of Original Function";
-        yaxislabel.text("FFT value");
-        xaxislabel.text("Frequency (Hz)")
-    } else if (currentFunction == "integrand") {
-        title = "Integrand of FFT with frequency " + freq; 
-        yaxislabel.text("Integrand value"); 
-        xaxislabel.text("t")
-    } else {
-        yaxislabel.text("Original function value"); 
-        title = "Original Function";
-        xaxislabel.text("t")
-    }
+    title = "Stationary Time-Series of Births";
+    yaxislabel.text("Days");
+    xaxislabel.text("Births");
+
     titleSVG
         .transition().duration(1000)
         .text(title);
@@ -360,7 +433,7 @@ function plotLine(newXValues, newYValues, color, lineSVG, rangeX, rangeY) {
     // scale the data to fit in our svg
     var scaleX = d3.scale.linear()
         .domain(rangeX)
-        .range([0, width]);
+        .range([0, stationaryWidth]);
 
     var scaleY = d3.scale.linear()
         .domain(rangeY)
