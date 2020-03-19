@@ -8,6 +8,12 @@ Based on
 - https://towardsdatascience.com/machine-learning-part-19-time-series-and-autoregressive-integrated-moving-average-model-arima-c1005347b0d7
 - https://machinelearningmastery.com/time-series-forecast-uncertainty-using-confidence-intervals-python/
 
+## Visualization
+https://lewiserick.github.io/time-series-analysis-glossary/
+
+## Time-Series Analysis
+Method to understand or forecast data points measured in a period of time (seconds, days, etc.), a time series.
+
 ## Stationary
 ✅ The variable is not a function of time
 
