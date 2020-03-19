@@ -22,10 +22,12 @@ function applyLog(data) {
     for (let index = 0; index < data.length; index++) {
         const val = data[index];
         
-        log_data.push({
-            x: val.x,
-            y: Math.log(val.y)
-        });
+        if (!isNaN(val.y) && !(val.y == 0 && val.x == 0) ) {
+            log_data.push({
+                x: val.x,
+                y: Math.log(val.y)
+            });
+        }
     }
     return log_data;
 }
@@ -44,7 +46,6 @@ function exponentialDecay(values, halfLife) {
 
         decayed_values.push({x: x, y: y * decay});
     }
-    console.log(decayed_values);
     return decayed_values;
 }
 
@@ -53,12 +54,12 @@ function subtractRollingMean(data, rollingMeans) {
     for (let index = 0; index < data.length; index++) {
         const val = data[index];
         const rollingMean = rollingMeans[index];
-        if (isNaN(rollingMean)) {
+        if (isNaN(rollingMean.y)) {
             result_data.push(val);
         } else {
-            result.data.push({
+            result_data.push({
                 x: val.x,
-                y: val.y - rollingMean
+                y: val.y - rollingMean.y
             });
         }
     }
@@ -67,8 +68,8 @@ function subtractRollingMean(data, rollingMeans) {
 
 function timeShift(data) {
     shiftedValues = [];
-    for (let index = 1; index < data.length; index--) {
-        const element1 = data[index].y - 1;
+    for (let index = 1; index < data.length; index++) {
+        const element1 = data[index-1].y;
         const element2 = data[index].y;
         shiftedValues.push({
             x: data[index].x, 
@@ -92,12 +93,32 @@ function getMovingData(func) {
     return data;
 }
 
-function getMovingRollingMean() {
-    return movingSeriesRollingMean;
+function getMovingRollingMean(func) {
+    var data = movingSeriesRollingMean;
+    if (func == "log") {
+        data = applyLog(data);
+    } else if (func == "exp_decay") {
+        data = exponentialDecay(/* values */data, /* halfLife */12);
+    } else if (func == "sub_rolling_mean") {
+        data = subtractRollingMean(data, movingSeriesRollingMean);
+    } else if (func == "time shifting") {
+        data = timeShift(data);
+    }
+    return data;
 }
 
-function getMovingRollingStddev() {
-    return movingSeriesRollingStddev;
+function getMovingRollingStddev(func) {
+    var data = movingSeriesRollingStddev;
+    if (func == "log") {
+        data = applyLog(data);
+    } else if (func == "exp_decay") {
+        data = exponentialDecay(/* values */data, /* halfLife */12);
+    } else if (func == "sub_rolling_mean") {
+        data = subtractRollingMean(data, movingSeriesRollingMean);
+    } else if (func == "time shifting") {
+        data = timeShift(data);
+    }
+    return data;
 }
 
 function getMovingCovariance() {
@@ -155,7 +176,7 @@ var circle = mySVG.append("circle")
 
 var yaxislabel = mySVG.append("text")
                       .attr("transform", "rotate(-90)")
-                      .attr("y", 0 - margin.left)
+                      .attr("y", 0 - (margin.left/2))
                       .attr("x",0 - (height / 2))
                       .attr("dy", "1em")
                       .style("text-anchor", "middle");
@@ -180,7 +201,7 @@ var xlabelaxis = mySVG.append("g")
     .attr("transform", "translate(0," + height/2 + ")") //sets the vertical axis in the middle;
 
 var ylabelaxis = mySVG.append("g")
-    .attr("class", "y axis");
+    .attr("class", "y axis")
 
 var xaxislabel = mySVG.append("text")             
                       .attr("transform",
@@ -225,7 +246,7 @@ var mvCircle = mySVG.append("circle")
 
 var mvyaxislabel = mySVG.append("text")
                       .attr("transform", "rotate(-90)")
-                      .attr("y", stationaryWidth)
+                      .attr("y", stationaryWidth + (margin.left/2) - 16)
                       .attr("x", 0  - (height / 2))
                       .attr("dy", "1em")
                       .style("text-anchor", "middle");
@@ -379,11 +400,24 @@ function xAxisValues(func)
 
 var freq = 1;
 
+function toggleFunctionToDisplay() {
+    if (currentFunction == "log") {
+        currentFunction = "exp_decay";
+    } else if (currentFunction == "exp_decay") {
+        currentFunction = "sub_rolling_mean";
+    } else if (currentFunction == "sub_rolling_mean") {
+        currentFunction = "time shifting";
+    } else if (currentFunction == "time shifting") {
+        currentFunction = "normal";
+    } else {
+        currentFunction = "log";
+    }
+    console.log(currentFunction);
+}
+
 function click() {
-    // Update the function to display.
-    var _x = d3.mouse(this)[0];
-    updateValues(_x, currentFunction);
-    plotLine(xValues, yValues);
+    toggleFunctionToDisplay();
+    updateData();
 }
 
 function over(){
@@ -411,8 +445,8 @@ updateValues(currentFunction);
 function plotGraph(newXValues, newYValues) {
     var title;
     title = "Stationary Time-Series of Births";
-    yaxislabel.text("Days");
-    xaxislabel.text("Births");
+    yaxislabel.text("Births");
+    xaxislabel.text("Days");
 
     titleSVG
         .transition().duration(1000)
@@ -545,9 +579,20 @@ function plotLineMoving(newXValues, newYValues, color, lineSVG, rangeX, rangeY) 
 
 function plotGraphMoving(newXValues, newYValues) {
     var title;
-    title = "Non-Stationary Time-Series of Births";
-    mvyaxislabel.text("Days");
-    mvxaxislabel.text("Births");
+    title = "Non-Stationary";
+    if (currentFunction == "log") {
+        title += " (Log Applied)";
+    } else if (currentFunction == "exp_decay") {
+        title += " (Exponential Decay)";
+    } else if (currentFunction == "sub_rolling_mean") {
+        title += " (Subtracted Rolling Mean)";
+    } else if (currentFunction == "time shifting") {
+        title += " (Time Shifted)";
+    } else {
+        title += " (No Transformation Applied)"
+    }
+    mvyaxislabel.text("Births");
+    mvxaxislabel.text("Days");
 
     mvtitleSVG
         .transition().duration(1000)
@@ -603,6 +648,95 @@ function plotGraphMoving(newXValues, newYValues) {
     return [rangeX, rangeY];
 }
 
+function updateData() {
+    var rollingMeanValues = getStationaryRollingMean();
+    var rollingMeanX = [];
+    for (const idx in rollingMeanValues) {
+        let val = rollingMeanValues[idx];
+        rollingMeanX.push(val.x);
+    }
+    var rollingMeanY = [];
+    for (const idx in rollingMeanValues) {
+        let val = rollingMeanValues[idx];
+        rollingMeanY.push(val.y);
+    }
+
+    var rollingStddevValues = getStationaryRollingStddev();
+    var rollingStddevX = [];
+    for (const idx in rollingStddevValues) {
+        let val = rollingStddevValues[idx];
+        rollingStddevX.push(val.x);
+    }
+    var rollingStddevY = [];
+    for (const idx in rollingStddevValues) {
+        let val = rollingStddevValues[idx];
+        rollingStddevY.push(val.y);
+    }
+
+    var movingData = getMovingData(currentFunction);
+    var mvxValues = [];
+    for (const idx in movingData) {
+        let val = movingData[idx];
+        mvxValues.push(val.x);
+    }
+    var mvyValues = [];
+    for (const idx in movingData) {
+        let val = movingData[idx];
+        mvyValues.push(val.y);
+    }
+
+    var mvrollingMeanValues = getMovingRollingMean(currentFunction);
+    var mvrollingMeanX = [];
+    for (const idx in mvrollingMeanValues) {
+        let val = mvrollingMeanValues[idx];
+        mvrollingMeanX.push(val.x);
+    }
+    var mvrollingMeanY = [];
+    for (const idx in mvrollingMeanValues) {
+        let val = mvrollingMeanValues[idx];
+        mvrollingMeanY.push(val.y);
+    }
+
+    var mvrollingStddevValues = getMovingRollingStddev(currentFunction);
+    var mvrollingStddevX = [];
+    for (const idx in mvrollingStddevValues) {
+        let val = mvrollingStddevValues[idx];
+        mvrollingStddevX.push(val.x);
+    }
+    var mvrollingStddevY = [];
+    for (const idx in mvrollingStddevValues) {
+        let val = mvrollingStddevValues[idx];
+        mvrollingStddevY.push(val.y);
+    }
+
+    // TODO(LewisErick): Find a better way to unify input to identify x and y axis
+    var statX = [];
+    statX = statX.concat(xValues, rollingMeanX, rollingStddevX);
+
+    var statY = [];
+    statY = statY.concat(yValues, rollingMeanY, rollingStddevY);
+
+    var ranges = plotGraph(statX, statY);
+
+    var movX = [];
+    movX = movX.concat(mvxValues, mvrollingMeanX, mvrollingStddevX);
+
+    var movY = [];
+    movY = movY.concat(mvyValues, mvrollingMeanY, mvrollingStddevY);
+
+    var rangesMoving = plotGraphMoving(movX, movY);
+
+    // Plot lines.
+    plotLine(xValues, yValues, "red", myLine, ranges[0], ranges[1]);
+    plotLine(rollingMeanX, rollingMeanY, "blue", myLine2, ranges[0], ranges[1]);
+    plotLine(rollingStddevX, rollingStddevY, "green", myLine3, ranges[0], ranges[1]);
+
+    // Plot moving time-series lines.
+    plotLineMoving(mvxValues, mvyValues, "red", mvMyLine, rangesMoving[0], rangesMoving[1]);
+    plotLineMoving(mvrollingMeanX, mvrollingMeanY, "blue", mvMyLine2, rangesMoving[0], rangesMoving[1]);
+    plotLineMoving(mvrollingStddevX, mvrollingStddevY, "green", mvMyLine3, rangesMoving[0], rangesMoving[1]);
+}
+
 var rollingMeanValues = getStationaryRollingMean();
 var rollingMeanX = [];
 for (const idx in rollingMeanValues) {
@@ -627,7 +761,7 @@ for (const idx in rollingStddevValues) {
     rollingStddevY.push(val.y);
 }
 
-var movingData = getMovingData();
+var movingData = getMovingData(currentFunction);
 var mvxValues = [];
 for (const idx in movingData) {
     let val = movingData[idx];
@@ -639,7 +773,7 @@ for (const idx in movingData) {
     mvyValues.push(val.y);
 }
 
-var mvrollingMeanValues = getMovingRollingMean();
+var mvrollingMeanValues = getMovingRollingMean(currentFunction);
 var mvrollingMeanX = [];
 for (const idx in mvrollingMeanValues) {
     let val = mvrollingMeanValues[idx];
@@ -651,7 +785,7 @@ for (const idx in mvrollingMeanValues) {
     mvrollingMeanY.push(val.y);
 }
 
-var mvrollingStddevValues = getMovingRollingStddev();
+var mvrollingStddevValues = getMovingRollingStddev(currentFunction);
 var mvrollingStddevX = [];
 for (const idx in mvrollingStddevValues) {
     let val = mvrollingStddevValues[idx];
@@ -673,10 +807,10 @@ statY = statY.concat(yValues, rollingMeanY, rollingStddevY);
 var ranges = plotGraph(statX, statY);
 
 var movX = [];
-movX = movX.concat(mvxValues);
+movX = movX.concat(mvxValues, mvrollingMeanX, mvrollingStddevX);
 
 var movY = [];
-movY = movY.concat(mvyValues);
+movY = movY.concat(mvyValues, mvrollingMeanY, mvrollingStddevY);
 
 var rangesMoving = plotGraphMoving(movX, movY);
 
@@ -689,3 +823,5 @@ plotLine(rollingStddevX, rollingStddevY, "green", myLine3, ranges[0], ranges[1])
 plotLineMoving(mvxValues, mvyValues, "red", mvMyLine, rangesMoving[0], rangesMoving[1]);
 plotLineMoving(mvrollingMeanX, mvrollingMeanY, "blue", mvMyLine2, rangesMoving[0], rangesMoving[1]);
 plotLineMoving(mvrollingStddevX, mvrollingStddevY, "green", mvMyLine3, rangesMoving[0], rangesMoving[1]);
+
+updateData();
